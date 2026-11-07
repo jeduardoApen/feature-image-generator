@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generador de imágenes Open Graph</title>
+  </head>
+  <body class="app">
+    <header class="app__header">
+      <p class="app__brand">Infinity Management Company</p>
+      <h1 class="app__heading">Generador de imágenes Open Graph</h1>
+    </header>
+    <main class="app__layout">
+      <section class="panel" aria-labelledby="editor-heading">
+        <h2 class="panel__heading" id="editor-heading">Editor</h2>
+        <fieldset class="panel__fields" id="settings" aria-labelledby="editor-heading">
+          <fieldset class="panel__section">
+            <legend class="panel__legend">Página e idioma</legend>
+            <label for="page">Página</label>
+            <select class="panel__input" id="page"></select>
+            <div class="panel__navigation">
+              <button class="button" id="previous" type="button">Anterior</button>
+              <output id="position" aria-live="polite"></output>
+              <button class="button" id="next" type="button">Siguiente</button>
+            </div>
+            <label for="language">Idioma del título</label>
+            <select class="panel__input" id="language">
+              <option value="en">Inglés</option>
+              <option value="es">Español</option>
+            </select>
+          </fieldset>
+          <fieldset class="panel__section">
+            <legend class="panel__legend">Título</legend>
+            <label for="title">Título</label>
+            <textarea class="panel__input" id="title" rows="3"></textarea>
+            <div class="panel__row">
+              <div class="panel__field">
+                <label for="textColor">Color del título</label>
+                <input class="panel__input panel__input--color" type="color" id="textColor" value="#008f48">
+              </div>
+              <div class="panel__field">
+                <label for="fontSize">Tamaño del título (px)</label>
+                <input class="panel__input" type="number" id="fontSize" min="12" max="200" value="56" required>
+              </div>
+            </div>
+            <fieldset class="panel__shadow">
+              <legend class="panel__legend">Sombra del título</legend>
+              <div class="panel__row">
+                <div class="panel__field">
+                  <label for="titleShadowX">Desplazamiento horizontal (px)</label>
+                  <input class="panel__input" type="number" id="titleShadowX" min="-200" max="200" value="2" required>
+                </div>
+                <div class="panel__field">
+                  <label for="titleShadowY">Desplazamiento vertical (px)</label>
+                  <input class="panel__input" type="number" id="titleShadowY" min="-200" max="200" value="2" required>
+                </div>
+              </div>
+              <div class="panel__row">
+                <div class="panel__field">
+                  <label for="titleShadowBlur">Radio de difuminado (px)</label>
+                  <input class="panel__input" type="number" id="titleShadowBlur" min="0" max="200" value="4" required>
+                </div>
+                <div class="panel__field">
+                  <label for="titleShadowColor">Color de la sombra</label>
+                  <input class="panel__input panel__input--color" type="color" id="titleShadowColor" value="#171717">
+                </div>
+              </div>
+              <label for="titleShadowOpacity">Opacidad de la sombra (%, 0 para quitarla)</label>
+              <input class="panel__input" type="number" id="titleShadowOpacity" min="0" max="100" value="35" required>
+            </fieldset>
+          </fieldset>
+          <fieldset class="panel__section">
+            <legend class="panel__legend">Logo</legend>
+            <label for="logoFile">Logo local (PNG o SVG, hasta 5 MB)</label>
+            <input class="panel__input" type="file" id="logoFile" accept=".png,.svg,image/png,image/svg+xml">
+            <label for="logoWidth">Ancho del logo (px)</label>
+            <input class="panel__input" type="number" id="logoWidth" min="1" max="4096" value="180" required>
+          </fieldset>
+          <fieldset class="panel__section">
+            <legend class="panel__legend">Dimensiones</legend>
+            <div class="panel__row">
+              <div class="panel__field">
+                <label for="imageWidth">Ancho de imagen (px)</label>
+                <input class="panel__input" type="number" id="imageWidth" min="120" max="4096" value="1200" required>
+              </div>
+              <div class="panel__field">
+                <label for="imageHeight">Alto de imagen (px)</label>
+                <input class="panel__input" type="number" id="imageHeight" min="120" max="4096" value="630" required>
+              </div>
+            </div>
+          </fieldset>
+          <fieldset class="panel__section">
+            <legend class="panel__legend">Fondo y borde</legend>
+            <div class="panel__row">
+              <div class="panel__field">
+                <label for="backgroundColor">Color de fondo</label>
+                <input class="panel__input panel__input--color" type="color" id="backgroundColor" value="#ffffff">
+              </div>
+              <div class="panel__field">
+                <label for="shadowColor">Color de la sombra</label>
+                <input class="panel__input panel__input--color" type="color" id="shadowColor" value="#171717">
+              </div>
+            </div>
+            <label for="shadowSize">Sombra interior del borde (px, 0 para quitarla)</label>
+            <input class="panel__input" type="number" id="shadowSize" min="0" max="200" value="0" required>
+          </fieldset>
+          <button class="button" id="reset" type="button">Restablecer diseño y quitar logo</button>
+          <p class="panel__note">El restablecimiento conserva los títulos editados.</p>
+        </fieldset>
+      </section>
+      <section class="preview" aria-labelledby="preview-heading">
+        <h2 class="panel__heading" id="preview-heading">Vista previa</h2>
+        <p class="preview__size" id="size"></p>
+        <div class="preview__viewport" id="viewport">
+          <div class="preview__scale" id="scale">
+            <div class="preview__canvas" id="canvas">
+              <img class="preview__logo" id="logo" alt="Logo de la empresa" hidden>
+              <p class="preview__title" id="previewTitle"></p>
+            </div>
+          </div>
+        </div>
+        <p class="panel__message" id="validation" role="status"></p>
+        <button class="button button--primary" id="export" type="button">Descargar PNG</button>
+        <p class="panel__message" id="status" role="status"></p>
+      </section>
+    </main>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
