@@ -27,3 +27,9 @@ There are no test, lint, or typecheck scripts — do not assume or invent them. 
 
 - `dist/` and `feature-images/` are gitignored build/generated artifacts — regenerate rather than hand-edit.
 - Exported filename is derived from the visible title: NFKD-normalized, diacritics stripped, non-alphanumerics collapsed to `-`, truncated to 60 chars, then suffixed `-{en|es}.png` (e.g. `gestion-de-activos-es.png`).
+
+## Bulk generation (second section on the page)
+
+- The "Generación masiva" section renders all `pageTitles` routes × EN+ES (80 images) from its own `bulk-*` controls (independent of the single editor).
+- It writes via the File System Access API (`showDirectoryPicker`) into `en/` and `es/` subfolders — **Chrome/Edge only**, requires a user gesture and a secure context (localhost/https). No ZIP dependency.
+- The off-screen render node is `#bulkCanvas` (`.bulk__stage` is positioned off-screen); reuse `titleToSlug` and `setTextShadow` rather than duplicating slug/shadow logic.

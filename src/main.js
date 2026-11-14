@@ -19,12 +19,19 @@ const defaults = {
   titleShadowOpacity: 35,
 };
 const fields = Object.keys(defaults);
+const bulkFields = [
+  'bulkTextColor', 'bulkFontSize', 'bulkLogoWidth', 'bulkImageWidth', 'bulkImageHeight',
+  'bulkBackgroundColor', 'bulkShadowColor', 'bulkShadowSize',
+  'bulkTitleShadowX', 'bulkTitleShadowY', 'bulkTitleShadowBlur', 'bulkTitleShadowColor', 'bulkTitleShadowOpacity',
+];
 const ui = Object.fromEntries(Array.from(document.querySelectorAll('[id]'), element => [element.id, element]));
 const editedTitles = new Map();
 let logoRatio = 0;
 let loadingLogo = false;
 let exporting = false;
 let layoutIssue = '';
+let bulkLogoRatio = 0;
+let bulkLoadingLogo = false;
 
 for (const [index, page] of pageTitles.entries()) {
   ui.page.add(new Option(page.route, index));
@@ -32,6 +39,16 @@ for (const [index, page] of pageTitles.entries()) {
 
 function titleKey() {
   return `${ui.page.value}:${ui.language.value}`;
+}
+
+function titleToSlug(title) {
+  const slug = title
+    .toLowerCase()
+    .normalize('NFKD')
+    .replace(/\p{M}/gu, '')
+    .replace(/[^\p{L}\p{N}]+/gu, '-')
+    .replace(/^-+|-+$/g, '');
+  return Array.from(slug).slice(0, 60).join('').replace(/-+$/, '');
 }
 
 function selectPage() {
@@ -56,16 +73,26 @@ function updateExportButton() {
   ui.export.disabled = Boolean(layoutIssue || loadingLogo || exporting);
 }
 
-function renderTitleShadow() {
-  const controls = [ui.titleShadowX, ui.titleShadowY, ui.titleShadowBlur, ui.titleShadowOpacity];
-  if (!controls.every(field => field.validity.valid) || ui.titleShadowOpacity.valueAsNumber === 0) {
-    ui.previewTitle.style.textShadow = 'none';
+function setTextShadow(target, x, y, blur, color, opacity) {
+  const controls = [x, y, blur, opacity];
+  if (!controls.every(field => field.validity.valid) || opacity.valueAsNumber === 0) {
+    target.style.textShadow = 'none';
     return;
   }
 
-  const [x, y, blur, opacity] = controls.map(field => field.valueAsNumber);
-  const alpha = Math.round(opacity * 255 / 100).toString(16).padStart(2, '0');
-  ui.previewTitle.style.textShadow = `${x}px ${y}px ${blur}px ${ui.titleShadowColor.value}${alpha}`;
+  const alpha = Math.round(opacity.valueAsNumber * 255 / 100).toString(16).padStart(2, '0');
+  target.style.textShadow = `${x.valueAsNumber}px ${y.valueAsNumber}px ${blur.valueAsNumber}px ${color.value}${alpha}`;
+}
+
+function renderTitleShadow() {
+  setTextShadow(
+    ui.previewTitle,
+    ui.titleShadowX,
+    ui.titleShadowY,
+    ui.titleShadowBlur,
+    ui.titleShadowColor,
+    ui.titleShadowOpacity,
+  );
 }
 
 function renderPreview() {
@@ -139,7 +166,10 @@ async function handleLogoUpload() {
       }
     }
     objectUrl = URL.createObjectURL(new Blob([file], { type: isPng ? 'image/png' : 'image/svg+xml' }));
-    await loadLogo(objectUrl, !isPng);
+    const { src, ratio } = await loadLogo(objectUrl, !isPng);
+    ui.logo.src = src;
+    ui.logo.hidden = false;
+    logoRatio = ratio;
     ui.status.textContent = 'Logo cargado.';
   } catch {
     ui.status.textContent = 'No se pudo cargar el logo. Usa un PNG válido o un SVG autónomo.';
@@ -164,9 +194,10 @@ async function loadLogo(url, upscale = false) {
   bitmap.width = Math.max(1, Math.round(image.naturalWidth * scale));
   bitmap.height = Math.max(1, Math.round(image.naturalHeight * scale));
   bitmap.getContext('2d').drawImage(image, 0, 0, bitmap.width, bitmap.height);
-  ui.logo.src = bitmap.toDataURL('image/png');
-  logoRatio = image.naturalHeight / image.naturalWidth;
-  ui.logo.hidden = false;
+  return {
+    src: bitmap.toDataURL('image/png'),
+    ratio: image.naturalHeight / image.naturalWidth,
+  };
 }
 
 async function loadDefaultLogo() {
@@ -175,7 +206,10 @@ async function loadDefaultLogo() {
   ui.reset.disabled = true;
   updateExportButton();
   try {
-    await loadLogo(defaultLogoUrl);
+    const { src, ratio } = await loadLogo(defaultLogoUrl);
+    ui.logo.src = src;
+    ui.logo.hidden = false;
+    logoRatio = ratio;
   } catch {
     ui.status.textContent = 'No se pudo cargar el logo inicial. Puedes seleccionar otro logo.';
   } finally {
@@ -195,13 +229,7 @@ async function exportCurrentImage() {
   const width = ui.imageWidth.valueAsNumber;
   const height = ui.imageHeight.valueAsNumber;
   const title = ui.previewTitle.textContent;
-  const slug = title
-    .toLowerCase()
-    .normalize('NFKD')
-    .replace(/\p{M}/gu, '')
-    .replace(/[^\p{L}\p{N}]+/gu, '-')
-    .replace(/^-+|-+$/g, '');
-  const safeTitle = Array.from(slug).slice(0, 60).join('').replace(/-+$/, '');
+  const safeTitle = titleToSlug(title);
   const filename = `${safeTitle || 'imagen'}-${ui.language.value}.png`;
 
   try {
@@ -230,6 +258,184 @@ function resetEditorSettings() {
   renderPreview();
 }
 
+function setBulkTitleShadow() {
+  setTextShadow(
+    ui.bulkTitle,
+    ui.bulkTitleShadowX,
+    ui.bulkTitleShadowY,
+    ui.bulkTitleShadowBlur,
+    ui.bulkTitleShadowColor,
+    ui.bulkTitleShadowOpacity,
+  );
+}
+
+function applyBulkCanvasStyles() {
+  const canvas = ui.bulkCanvas;
+  canvas.style.backgroundColor = ui.bulkBackgroundColor.value;
+  const shadowSize = ui.bulkShadowSize.validity.valid ? ui.bulkShadowSize.valueAsNumber : defaults.shadowSize;
+  canvas.style.boxShadow = shadowSize ? `inset 0 0 ${shadowSize}px ${ui.bulkShadowColor.value}` : 'none';
+
+  ui.bulkTitle.style.color = ui.bulkTextColor.value;
+  const fontSize = ui.bulkFontSize.validity.valid ? ui.bulkFontSize.valueAsNumber : defaults.fontSize;
+  ui.bulkTitle.style.fontSize = `${fontSize}px`;
+  setBulkTitleShadow();
+
+  if ([ui.bulkImageWidth, ui.bulkImageHeight].every(field => field.validity.valid)) {
+    canvas.style.width = `${ui.bulkImageWidth.valueAsNumber}px`;
+    canvas.style.height = `${ui.bulkImageHeight.valueAsNumber}px`;
+  }
+
+  const width = canvas.clientWidth;
+  const height = canvas.clientHeight;
+  const padding = Math.min(32, Math.floor(Math.min(width, height) / 8));
+  const logoWidth = ui.bulkLogoWidth.validity.valid ? ui.bulkLogoWidth.valueAsNumber : defaults.logoWidth;
+  canvas.style.setProperty('--image-padding', `${padding}px`);
+  ui.bulkLogo.style.width = `${logoWidth}px`;
+  ui.bulkLogo.style.height = `${logoWidth * bulkLogoRatio}px`;
+  const titleTop = bulkLogoRatio ? padding * 2 + ui.bulkLogo.offsetHeight : padding;
+  ui.bulkTitle.style.insetBlockStart = `${titleTop}px`;
+  return { width, height };
+}
+
+async function handleBulkLogoUpload() {
+  const file = ui.bulkLogoFile.files[0];
+  if (!file) return;
+  ui.bulkLogoFile.value = '';
+  if (!/\.(png|svg)$/i.test(file.name) || file.size === 0 || file.size > 5_000_000) {
+    ui.bulkStatus.textContent = 'Selecciona un archivo PNG o SVG de hasta 5 MB.';
+    return;
+  }
+
+  bulkLoadingLogo = true;
+  ui.bulkLogoFile.disabled = true;
+  ui.bulkGenerate.disabled = true;
+  ui.bulkStatus.textContent = 'Cargando logo…';
+  let objectUrl;
+  try {
+    const isPng = /\.png$/i.test(file.name);
+    if (isPng) {
+      const signature = new Uint8Array(await file.slice(0, 8).arrayBuffer());
+      if (signature.join(',') !== '137,80,78,71,13,10,26,10') throw new Error('PNG inválido');
+    } else {
+      const svg = new DOMParser().parseFromString(await file.text(), 'image/svg+xml').documentElement;
+      if (svg.localName !== 'svg' || svg.namespaceURI !== 'http://www.w3.org/2000/svg') {
+        throw new Error('SVG inválido');
+      }
+    }
+    objectUrl = URL.createObjectURL(new Blob([file], { type: isPng ? 'image/png' : 'image/svg+xml' }));
+    const { src, ratio } = await loadLogo(objectUrl, !isPng);
+    ui.bulkLogo.src = src;
+    ui.bulkLogo.hidden = false;
+    bulkLogoRatio = ratio;
+    ui.bulkStatus.textContent = 'Logo cargado.';
+  } catch {
+    ui.bulkStatus.textContent = 'No se pudo cargar el logo. Usa un PNG válido o un SVG autónomo.';
+  } finally {
+    if (objectUrl) URL.revokeObjectURL(objectUrl);
+    bulkLoadingLogo = false;
+    ui.bulkLogoFile.disabled = false;
+    ui.bulkGenerate.disabled = false;
+    applyBulkCanvasStyles();
+  }
+}
+
+async function loadBulkDefaultLogo() {
+  bulkLoadingLogo = true;
+  ui.bulkLogoFile.disabled = true;
+  ui.bulkGenerate.disabled = true;
+  try {
+    const { src, ratio } = await loadLogo(defaultLogoUrl);
+    ui.bulkLogo.src = src;
+    ui.bulkLogo.hidden = false;
+    bulkLogoRatio = ratio;
+  } catch {
+    ui.bulkStatus.textContent = 'No se pudo cargar el logo inicial. Puedes seleccionar otro logo.';
+  } finally {
+    bulkLoadingLogo = false;
+    ui.bulkLogoFile.disabled = false;
+    ui.bulkGenerate.disabled = false;
+    applyBulkCanvasStyles();
+  }
+}
+
+function resetBulkStyles() {
+  for (const key of bulkFields) {
+    const defaultKey = key[4].toLowerCase() + key.slice(5);
+    ui[key].value = defaults[defaultKey];
+  }
+  bulkLogoRatio = 0;
+  ui.bulkLogo.hidden = true;
+  ui.bulkLogo.removeAttribute('src');
+  ui.bulkStatus.textContent = 'Estilos base restablecidos.';
+  applyBulkCanvasStyles();
+}
+
+async function generateBulk() {
+  if (!('showDirectoryPicker' in window)) {
+    ui.bulkStatus.textContent = 'Este navegador no admite guardar en carpeta. Usa Chrome o Edge.';
+    return;
+  }
+  if (!bulkFields.every(key => ui[key].validity.valid)) {
+    ui.bulkStatus.textContent = 'Introduce números enteros dentro de los límites de cada campo.';
+    return;
+  }
+
+  let directory;
+  try {
+    directory = await window.showDirectoryPicker();
+  } catch (error) {
+    ui.bulkStatus.textContent = error.name === 'AbortError'
+      ? 'Generación cancelada.'
+      : 'No se pudo abrir la carpeta. Verifica los permisos del navegador.';
+    return;
+  }
+
+  const width = ui.bulkImageWidth.valueAsNumber;
+  const height = ui.bulkImageHeight.valueAsNumber;
+  applyBulkCanvasStyles();
+  ui.bulkGenerate.disabled = true;
+
+  const total = pageTitles.length * 2;
+  const overflowed = [];
+  let done = 0;
+  try {
+    const [enDir, esDir] = await Promise.all([
+      directory.getDirectoryHandle('en', { create: true }),
+      directory.getDirectoryHandle('es', { create: true }),
+    ]);
+    for (const page of pageTitles) {
+      for (const language of ['en', 'es']) {
+        const title = page[language];
+        ui.bulkTitle.textContent = title;
+        ui.bulkTitle.lang = language;
+        if (ui.bulkTitle.scrollHeight > ui.bulkTitle.clientHeight) {
+          overflowed.push(`${page.route} (${language})`);
+        }
+        const png = await domToImage.toPng(ui.bulkCanvas, { width, height, scale: 1, pixelRatio: 1 });
+        const blob = await (await fetch(png)).blob();
+        const targetDir = language === 'en' ? enDir : esDir;
+        const fileHandle = await targetDir.getFileHandle(`${titleToSlug(title)}-${language}.png`, { create: true });
+        const writable = await fileHandle.createWritable();
+        await writable.write(blob);
+        await writable.close();
+        done += 1;
+        ui.bulkStatus.textContent = `Generadas ${done} de ${total}…`;
+      }
+    }
+    let message = `Listo: ${done} imágenes guardadas en «${directory.name}».`;
+    if (overflowed.length) {
+      message += ` Desbordaron: ${overflowed.join(', ')}.`;
+    }
+    ui.bulkStatus.textContent = message;
+  } catch (error) {
+    ui.bulkStatus.textContent = error.name === 'AbortError'
+      ? 'Generación cancelada.'
+      : `Error al generar: ${error.message || error}`;
+  } finally {
+    ui.bulkGenerate.disabled = false;
+  }
+}
+
 ui.previous.addEventListener('click', () => {
   ui.page.selectedIndex -= 1;
   selectPage();
@@ -248,6 +454,11 @@ for (const key of fields) ui[key].addEventListener('input', renderPreview);
 ui.logoFile.addEventListener('change', handleLogoUpload);
 ui.export.addEventListener('click', exportCurrentImage);
 ui.reset.addEventListener('click', resetEditorSettings);
+ui.bulkLogoFile.addEventListener('change', handleBulkLogoUpload);
+ui.bulkGenerate.addEventListener('click', generateBulk);
+ui.bulkReset.addEventListener('click', resetBulkStyles);
+for (const key of bulkFields) ui[key].addEventListener('input', applyBulkCanvasStyles);
 new ResizeObserver(resizePreview).observe(ui.viewport);
 selectPage();
 loadDefaultLogo();
+loadBulkDefaultLogo();

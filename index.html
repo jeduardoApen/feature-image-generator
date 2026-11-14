@@ -124,6 +124,98 @@
         <p class="panel__message" id="status" role="status"></p>
       </section>
     </main>
+    <section class="bulk" aria-labelledby="bulk-heading">
+      <div class="panel">
+        <h2 class="panel__heading" id="bulk-heading">Generación masiva</h2>
+        <p class="panel__note">Define los estilos base y descarga las imágenes de todas las páginas en inglés y español.</p>
+        <fieldset class="panel__fields" id="bulkSettings" aria-labelledby="bulk-heading">
+          <fieldset class="panel__section">
+            <legend class="panel__legend">Título</legend>
+            <div class="panel__row">
+              <div class="panel__field">
+                <label for="bulkTextColor">Color del título</label>
+                <input class="panel__input panel__input--color" type="color" id="bulkTextColor" value="#008f48">
+              </div>
+              <div class="panel__field">
+                <label for="bulkFontSize">Tamaño del título (px)</label>
+                <input class="panel__input" type="number" id="bulkFontSize" min="12" max="200" value="56" required>
+              </div>
+            </div>
+            <fieldset class="panel__shadow">
+              <legend class="panel__legend">Sombra del título</legend>
+              <div class="panel__row">
+                <div class="panel__field">
+                  <label for="bulkTitleShadowX">Desplazamiento horizontal (px)</label>
+                  <input class="panel__input" type="number" id="bulkTitleShadowX" min="-200" max="200" value="2" required>
+                </div>
+                <div class="panel__field">
+                  <label for="bulkTitleShadowY">Desplazamiento vertical (px)</label>
+                  <input class="panel__input" type="number" id="bulkTitleShadowY" min="-200" max="200" value="2" required>
+                </div>
+              </div>
+              <div class="panel__row">
+                <div class="panel__field">
+                  <label for="bulkTitleShadowBlur">Radio de difuminado (px)</label>
+                  <input class="panel__input" type="number" id="bulkTitleShadowBlur" min="0" max="200" value="4" required>
+                </div>
+                <div class="panel__field">
+                  <label for="bulkTitleShadowColor">Color de la sombra</label>
+                  <input class="panel__input panel__input--color" type="color" id="bulkTitleShadowColor" value="#171717">
+                </div>
+              </div>
+              <label for="bulkTitleShadowOpacity">Opacidad de la sombra (%, 0 para quitarla)</label>
+              <input class="panel__input" type="number" id="bulkTitleShadowOpacity" min="0" max="100" value="35" required>
+            </fieldset>
+          </fieldset>
+          <fieldset class="panel__section">
+            <legend class="panel__legend">Logo</legend>
+            <label for="bulkLogoFile">Logo local (PNG o SVG, hasta 5 MB)</label>
+            <input class="panel__input" type="file" id="bulkLogoFile" accept=".png,.svg,image/png,image/svg+xml">
+            <label for="bulkLogoWidth">Ancho del logo (px)</label>
+            <input class="panel__input" type="number" id="bulkLogoWidth" min="1" max="4096" value="180" required>
+          </fieldset>
+          <fieldset class="panel__section">
+            <legend class="panel__legend">Dimensiones</legend>
+            <div class="panel__row">
+              <div class="panel__field">
+                <label for="bulkImageWidth">Ancho de imagen (px)</label>
+                <input class="panel__input" type="number" id="bulkImageWidth" min="120" max="4096" value="1200" required>
+              </div>
+              <div class="panel__field">
+                <label for="bulkImageHeight">Alto de imagen (px)</label>
+                <input class="panel__input" type="number" id="bulkImageHeight" min="120" max="4096" value="630" required>
+              </div>
+            </div>
+          </fieldset>
+          <fieldset class="panel__section">
+            <legend class="panel__legend">Fondo y borde</legend>
+            <div class="panel__row">
+              <div class="panel__field">
+                <label for="bulkBackgroundColor">Color de fondo</label>
+                <input class="panel__input panel__input--color" type="color" id="bulkBackgroundColor" value="#ffffff">
+              </div>
+              <div class="panel__field">
+                <label for="bulkShadowColor">Color de la sombra</label>
+                <input class="panel__input panel__input--color" type="color" id="bulkShadowColor" value="#171717">
+              </div>
+            </div>
+            <label for="bulkShadowSize">Sombra interior del borde (px, 0 para quitarla)</label>
+            <input class="panel__input" type="number" id="bulkShadowSize" min="0" max="200" value="0" required>
+          </fieldset>
+        </fieldset>
+        <div class="bulk__actions">
+          <button class="button" id="bulkReset" type="button">Restablecer estilos base</button>
+          <button class="button button--primary" id="bulkGenerate" type="button">Generar imágenes</button>
+        </div>
+        <p class="panel__message" id="bulkStatus" role="status"></p>
+      </div>
+      <div class="bulk__stage" aria-hidden="true">
+        <div class="preview__canvas" id="bulkCanvas">
+          <img class="preview__logo" id="bulkLogo" alt="Logo de la empresa" hidden>
+          <p class="preview__title" id="bulkTitle"></p>
+        </div>
+      </div>
+    </section>
     <script type="module" src="/src/main.js"></script>
   </body>
 </html>
